@@ -1,13 +1,5 @@
-import { App, Stack, StackProps } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-
-export class MyStack extends Stack {
-  constructor(scope: Construct, id: string, props: StackProps = {}) {
-    super(scope, id, props);
-
-    // define resources here...
-  }
-}
+import { App, Stack } from 'aws-cdk-lib';
+import { ContainerImage, FargateTaskDefinition } from 'aws-cdk-lib/aws-ecs';
 
 // for development, use account/region from cdk cli
 const devEnv = {
@@ -17,7 +9,17 @@ const devEnv = {
 
 const app = new App();
 
-new MyStack(app, 'cdk-concurrency-bug-dev', { env: devEnv });
-// new MyStack(app, 'cdk-concurrency-bug-prod', { env: prodEnv });
+const stack = new Stack(app, 'cdk-concurrency-bug', { env: devEnv });
+
+for (let i = 0; i < 30; i++) {
+  const task = new FargateTaskDefinition(stack, `Task${i}`, {});
+  task.addContainer('asset', {
+    image: ContainerImage.fromAsset(__dirname, {
+      buildArgs: {
+        VAR: `var-${i}`,
+      },
+    }),
+  });
+}
 
 app.synth();
